@@ -1,1 +1,1 @@
-En esta carpeta está el codigo del frontend
+Esta carpeta está destinada al codigo del frontend
