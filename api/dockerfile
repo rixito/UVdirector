@@ -1,5 +1,20 @@
-FROM php:7.4-apache
+# Usar la imagen base de Go
+FROM golang:1.20-alpine
 
-# Instalar extensiones PHP necesarias
-RUN docker-php-ext-install mysqli
+# Establecer el directorio de trabajo
+WORKDIR /app
 
+# Copiar los archivos necesarios
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Compilar el binario
+RUN go build -o main .
+
+# Exponer el puerto 8080
+EXPOSE 8080
+
+# Comando para ejecutar la aplicación
+CMD ["./main"]
