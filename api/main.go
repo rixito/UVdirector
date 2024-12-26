@@ -18,6 +18,12 @@ type Cancion struct {
 
 type Letra struct {
 	Texto string `json:"texto"`
+	IDEstructura string `json:"id_estructura_canciones"`
+}
+
+type Parrafo struct {
+	IDEstructura string `json:"id_estructura_canciones"`
+	Descripcion string `json:"descripcion_parrafo"`
 }
 
 var db *sql.DB
@@ -46,6 +52,7 @@ func main() {
 	// Rutas HTTP
 	http.HandleFunc("/lista_canciones", listaCancionesHandler)
 	http.HandleFunc("/consulta_letra_cancion", consultaLetraCancionHandler)
+	http.HandleFunc("/consulta_parrafo_cancion", consultaParrafoCancionHandler)
 
 	fmt.Println("Servidor escuchando en el puerto 8080...22:55")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -75,6 +82,21 @@ func consultaLetraCancionHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(letra)
 }
 
+func consultaParrafoCancionHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "Falta el parámetro 'id'", http.StatusBadRequest)
+		return
+	}
+
+	parrafo, err := consultaParrafoCancion(id)
+	if err != nil {
+		http.Error(w, "Error al obtener la letra de la canción", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(parrafo)
+}
+
 func listaCanciones() ([]Cancion, error) {
 	rows, err := db.Query("SELECT id_canciones, nombre FROM canciones ORDER BY nombre")
 	if err != nil {
@@ -94,7 +116,7 @@ func listaCanciones() ([]Cancion, error) {
 }
 
 func consultaLetraCancion(id string) ([]Letra, error) {
-	rows, err := db.Query("SELECT texto FROM lineas_canciones WHERE id_canciones = ?", id)
+	rows, err := db.Query("SELECT id_estructura_canciones,texto FROM lineas_canciones WHERE id_canciones = ?", id)
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +125,30 @@ func consultaLetraCancion(id string) ([]Letra, error) {
 	var letra []Letra
 	for rows.Next() {
 		var l Letra
-		if err := rows.Scan(&l.texto); err != nil {
+		if err := rows.Scan(&l.IDEstructura,&l.Texto); err != nil {
 			return nil, err
 		}
 
 		letra = append(letra, l)
 	}
 	return letra, nil
+}
+
+func consultaParrafoCancion(id string) ([]Parrafo, error) {
+	rows, err := db.Query("SELECT ec.id_estructura_canciones, concat(tl.descripcion,cast(ec.tipo_linea_numero as char(50))) as descripcion_parrafo FROM tipos_linea tl LEFT JOIN estructura_canciones ec ON ec.id_tipo_linea = tl.id WHERE ec.id_canciones = ? order by ec.posicion_estructura", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var parrafo []Parrafo
+	for rows.Next() {
+		var p Parrafo
+		if err := rows.Scan(&p.IDEstructura,&p.Descripcion,); err != nil {
+			return nil, err
+		}
+
+		parrafo = append(parrafo, p)
+	}
+	return parrafo, nil
 }
