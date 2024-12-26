@@ -93,12 +93,21 @@ func listaCanciones() ([]Cancion, error) {
 	return canciones, nil
 }
 
-func consultaLetraCancion(id string) (Letra, error) {
-	var letra Letra
-	query := "SELECT texto FROM lineas_canciones WHERE id_canciones = ?"
-	row := db.QueryRow(query, id)
-	if err := row.Scan(&letra.Texto); err != nil {
-		return letra, err
+func consultaLetraCancion(id string) ([]Letra, error) {
+	rows, err := db.Query("SELECT texto FROM lineas_canciones WHERE id_canciones = ?", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var letra []Letra
+	for rows.Next() {
+		var l Letra
+		if err := rows.Scan(&l.texto); err != nil {
+			return nil, err
+		}
+
+		letra = append(letra, l)
 	}
 	return letra, nil
 }
