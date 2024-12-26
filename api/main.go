@@ -47,7 +47,7 @@ func main() {
 	http.HandleFunc("/lista_canciones", listaCancionesHandler)
 	http.HandleFunc("/consulta_letra_cancion", consultaLetraCancionHandler)
 
-	fmt.Println("Servidor escuchando en el puerto 8080...")
+	fmt.Println("Servidor escuchando en el puerto 8080...22:55")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -89,7 +89,7 @@ func listaCanciones() ([]Cancion, error) {
 			return nil, err
 		}
 		canciones = append(canciones, c)
-	}
+	}	
 	return canciones, nil
 }
 
