@@ -1,0 +1,5 @@
+FROM php:7.4-apache
+
+# Instalar extensiones PHP necesarias
+RUN docker-php-ext-install mysqli
+
