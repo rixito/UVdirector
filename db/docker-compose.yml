@@ -9,7 +9,7 @@ services:
       MYSQL_ROOT_PASSWORD:
       MYSQL_DATABASE: UV_DB
       MYSQL_USER: admin_UV_DB
-      MYSQL_PASSWORD: 
+      MYSQL_PASSWORD: 982h78r7h47748h
     ports:
       - "3307:3306"
     volumes:
