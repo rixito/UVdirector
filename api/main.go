@@ -53,6 +53,8 @@ func main() {
 	http.HandleFunc("/lista_canciones", listaCancionesHandler)
 	http.HandleFunc("/consulta_letra_cancion", consultaLetraCancionHandler)
 	http.HandleFunc("/consulta_parrafo_cancion", consultaParrafoCancionHandler)
+	http.HandleFunc("/consulta_letra_cifrado_cancion", consultaLetraCifradoCancionHandler)
+
 
 	fmt.Println("Servidor escuchando en el puerto 8080...22:55")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -96,6 +98,26 @@ func consultaParrafoCancionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(parrafo)
 }
+
+
+func consultaLetraCifradoCancionHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	tono := r.URL.Query().Get("tono")
+
+	if id == "" || tono == "" {
+		http.Error(w, "Faltan los parámetros 'id' y/o 'tono'", http.StatusBadRequest)
+		return
+	}
+
+	resultados, err := consultaLetraCifradoCancion(id, tono)
+	if err != nil {
+		http.Error(w, "Error al obtener la letra cifrada de la canción", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(resultados)
+}
+
+
 
 func listaCanciones() ([]Cancion, error) {
 	rows, err := db.Query("SELECT id_canciones, nombre FROM canciones ORDER BY nombre")
@@ -151,4 +173,58 @@ func consultaParrafoCancion(id string) ([]Parrafo, error) {
 		parrafo = append(parrafo, p)
 	}
 	return parrafo, nil
+}
+
+func consultaLetraCifradoCancion(id string, tono string) ([]map[string]string, error) {
+	query := `
+		SELECT 
+			CONCAT(
+				(SELECT tonalidades.codigo FROM tonalidades WHERE tonalidades.grado = acordes_linea.grado + ?),
+				IFNULL(triadas.triadas, ''),
+				IFNULL(extensiones.extensiones, '')
+			) AS acorde,
+			SUBSTR(
+				lineas_canciones.texto,
+				acordes_linea.ubicacion,
+				IF(
+					acordes_linea.id_lineas_canciones = LEAD(acordes_linea.id_lineas_canciones) OVER (ORDER BY acordes_linea.id_acordes_linea),
+					LEAD(acordes_linea.ubicacion) OVER (ORDER BY acordes_linea.id_acordes_linea) - 1,
+					LENGTH(lineas_canciones.texto)
+				)
+			) AS letra
+		FROM 
+			lineas_canciones
+		LEFT JOIN 
+			acordes_linea ON acordes_linea.id_lineas_canciones = lineas_canciones.id_lineas_canciones
+		LEFT JOIN 
+			triadas ON acordes_linea.id_triadas = triadas.id_triadas
+		LEFT JOIN 
+			extensiones ON acordes_linea.id_extensiones = extensiones.id_extensiones
+		WHERE 
+			lineas_canciones.id_canciones = ?
+	`
+
+	rows, err := db.Query(query, tono, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var resultados []map[string]string
+	for rows.Next() {
+		var acorde, letra string
+		if err := rows.Scan(&acorde, &letra); err != nil {
+			return nil, err
+		}
+		resultados = append(resultados, map[string]string{
+			"acorde": acorde,
+			"letra":  letra,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return resultados, nil
 }
