@@ -6,7 +6,7 @@ services:
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD:
+      MYSQL_ROOT_PASSWORD: 03jh8frj4938jh948
       MYSQL_DATABASE: UV_DB
       MYSQL_USER: admin_UV_DB
       MYSQL_PASSWORD: 982h78r7h47748h
@@ -22,7 +22,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD:
+      MYSQL_ROOT_PASSWORD: 03jh8frj4938jh948
     ports:
       - "8080:80"
 
